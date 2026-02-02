@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "mc-backend",
   "version": "1.0.0",
   "engines": {
     "node": "24.x"
