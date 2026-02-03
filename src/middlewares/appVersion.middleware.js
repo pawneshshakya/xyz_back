@@ -18,7 +18,11 @@ const enforceMinAppVersion = async (req, res, next) => {
     const isSupported =
       compareVersions(appVersion, config.minSupportedVersion) >= 0;
 
-    if (!isSupported) {
+    const graceDeadline = new Date(config.updatedAt);
+    graceDeadline.setDate(graceDeadline.getDate() + config.graceDays);
+    const graceActive = Date.now() <= graceDeadline.getTime();
+
+    if (!isSupported && (config.forceUpdate || !graceActive)) {
       return res.status(426).json({
         message: 'Please update the app to continue',
       });

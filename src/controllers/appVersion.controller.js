@@ -30,7 +30,12 @@ const getVersionStatus = async (req, res) => {
       });
     }
 
-    if (!config.forceUpdate) {
+    // Use the last config update time as the start of the grace window.
+    const graceDeadline = new Date(config.updatedAt);
+    graceDeadline.setDate(graceDeadline.getDate() + config.graceDays);
+    const graceActive = Date.now() <= graceDeadline.getTime();
+
+    if (!config.forceUpdate && graceActive) {
       return res.json({
         status: 'WARNING',
         latestVersion: config.latestVersion,
