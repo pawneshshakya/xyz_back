@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { enforceMinAppVersion } = require('./middlewares/appVersion.middleware');
 
 // Route files
 
@@ -13,7 +14,9 @@ app.use(cors());
 
 // Mount routers
 app.get('/', (req, res) => res.send('API is running...'));
+app.use('/api/app', require('./routes/appVersion.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
+app.use(enforceMinAppVersion);
 app.use('/api/wallet', require('./routes/wallet.routes'));
 app.use('/api/matches', require('./routes/match.routes'));
 app.use('/api/users', require('./routes/user.routes'));

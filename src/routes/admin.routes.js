@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/admin.controller");
+const appVersionController = require('../controllers/appVersion.controller');
 
 const { protect } = require("../middlewares/auth.middleware");
 const { isAdmin } = require("../middlewares/admin.middleware");
@@ -13,6 +14,7 @@ router.get("/users", adminController.getUsers);
 router.get("/matches", adminController.getMatches);
 router.post("/create-sponsored-event", adminController.createSponsoredEvent);
 router.post("/create-premium-event", adminController.createPremiumEvent);
+router.post('/app/version', appVersionController.upsertVersionConfig);
 router.put("/matches/:id", adminController.updateMatch);
 router.delete("/matches/:id", adminController.deleteMatch);
 router.put("/users/:id", adminController.updateUser);
