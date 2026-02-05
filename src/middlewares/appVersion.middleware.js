@@ -1,16 +1,18 @@
-const AppVersionConfig = require('../models/appVersionConfig.model');
-const { compareVersions } = require('../utils/semver');
+const AppVersionConfig = require("../models/appVersionConfig.model");
+const { compareVersions } = require("../utils/semver");
 
 const enforceMinAppVersion = async (req, res, next) => {
   try {
-    const appVersion = req.headers['app-version'];
-    const platform = req.headers['platform'];
+    const appVersion = req.headers["app-version"];
+    const platform = req.headers["platform"];
 
     if (!appVersion || !platform) {
       return next();
     }
 
-    const config = await AppVersionConfig.findOne({ platform: platform.toLowerCase() });
+    const config = await AppVersionConfig.findOne({
+      platform: platform.toLowerCase(),
+    });
     if (!config) {
       return next();
     }
@@ -24,7 +26,7 @@ const enforceMinAppVersion = async (req, res, next) => {
 
     if (!isSupported && (config.forceUpdate || !graceActive)) {
       return res.status(426).json({
-        message: 'Please update the app to continue',
+        message: "Please update the app to continue",
       });
     }
 

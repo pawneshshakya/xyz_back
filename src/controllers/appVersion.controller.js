@@ -101,7 +101,35 @@ const upsertVersionConfig = async (req, res) => {
   }
 };
 
+const getVersionConfig = async (req, res) => {
+  try {
+    const { platform } = req.query;
+    if (!platform) {
+      return res
+        .status(STATUS_CODES.BAD_REQUEST)
+        .json({ success: false, message: 'platform is required' });
+    }
+
+    const config = await AppVersionConfig.findOne({
+      platform: platform.toLowerCase(),
+    });
+
+    if (!config) {
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ success: false, message: 'App version config not found' });
+    }
+
+    return res.json({ success: true, data: config });
+  } catch (error) {
+    return res
+      .status(STATUS_CODES.SERVER_ERROR)
+      .json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getVersionStatus,
   upsertVersionConfig,
+  getVersionConfig,
 };

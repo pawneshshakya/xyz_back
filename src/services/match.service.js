@@ -260,6 +260,11 @@ const getAllMatches = async (coordinates) => {
     };
   }
 
+  // Filter for Featured Events (Admin Created / Premium / Sponsored)
+  if (coordinates && coordinates.featured === 'true') {
+    query.$or = [{ is_premium: true }, { is_sponsored: true }];
+  }
+
   const matches = await Match.find(query).sort('-createdAt');
 
   // Check statuses asynchronously
