@@ -5,6 +5,7 @@ const Transaction = require("../models/transaction.model");
 const Banner = require("../models/banner.model");
 const { decrypt, encrypt } = require("../utils/encryption");
 const notificationService = require("../services/notification.service");
+const { broadcast } = require("../utils/sse");
 
 const safeDecryptNumber = (val) => {
   const decrypted = decrypt(val);
@@ -774,6 +775,7 @@ module.exports = {
         display_order: display_order || 0,
         created_by: req.user._id,
       });
+      broadcast({ type: 'BANNER_UPDATE', action: 'create', data: banner });
       res.json({ success: true, data: banner });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -795,6 +797,7 @@ module.exports = {
         return res.status(404).json({ success: false, message: "Banner not found" });
       }
       res.json({ success: true, data: banner });
+      broadcast({ type: 'BANNER_UPDATE', action: 'update', data: banner });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

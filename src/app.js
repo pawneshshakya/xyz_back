@@ -20,6 +20,7 @@ app.get('/', (req, res) => res.send('API is running...'));
 app.use('/api/app', require('./routes/appVersion.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/banners', require('./routes/banner.routes'));
+app.use('/api/sse', require('./routes/sse.routes'));
 app.use(enforceMinAppVersion);
 app.use('/api/wallet', require('./routes/wallet.routes'));
 app.use('/api/matches', require('./routes/match.routes'));
