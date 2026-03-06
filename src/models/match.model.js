@@ -63,12 +63,12 @@ const MatchSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["OPEN", "ONGOING", "PENDING_MEDIATOR_REVIEW", "COMPLETED"],
+      enum: ["OPEN", "ONGOING", "REVIEW", "COMPLETED"],
       default: "OPEN",
     },
     isPublished: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     location: {
       type: { type: String, enum: ["Point"], default: "Point" },

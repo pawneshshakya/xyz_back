@@ -30,8 +30,9 @@ const createMatch = async (userId, matchData) => {
   if (parseFloat(entry_fee) < 0) throw new Error('Entry fee cannot be negative');
   if (parseFloat(prize_pool) < 0) throw new Error('Prize pool cannot be negative');
 
-  // Use provided Room ID or generate one
-  const room_id = providedRoomId || Math.random().toString(36).substring(2, 8).toUpperCase();
+  // Only use a provided Room ID — never auto-generate one.
+  // Room ID is set by the organizer at publish time, not at draft creation.
+  const room_id = providedRoomId || null;
 
   // Mediator Lookup
   let mediator_user_id = null;
@@ -96,25 +97,17 @@ const updateMatch = async (matchId, userId, updateData) => {
     throw new Error('Not authorized');
   }
 
-  if (match.isPublished && !updateData.isPublished) {
-    // Trying to unpublish? 
-    // For now, allow simple updates.
+  // Block editing a published match (except forceUpdate for admin use)
+  if (match.isPublished && !updateData.forceUpdate) {
+    throw new Error('Cannot edit published match');
   }
 
-  // If editing a non-published match, allow full edits.
-  // If published, maybe restrict? 
-  // User says "if event is not published we can edit".
-  // So if match.isPublished is true, we might block updates or allow partial?
-  // I will follow instruction: "if event is not published event we can edit".
-  // Implies we CANNOT edit if published (or restricted).
-  // I'll throw if isPublished is true AND we are not trying to just update specific allowed fields?
-  // Simply: Only allow update if !isPublished.
-  // Exception: Publishing it (setting isPublished: true).
-
-  if (match.isPublished && !updateData.forceUpdate) {
-    // Allow forceUpdate if needed, otherwise block.
-    // But wait, user might want to edit "Winner" or something? No that's submitResult.
-    throw new Error('Cannot edit published match');
+  // Require room_id when publishing a draft
+  if (!match.isPublished && updateData.isPublished) {
+    const roomIdToUse = updateData.room_id || match.room_id;
+    if (!roomIdToUse) {
+      throw new Error('A Room ID is required to publish this match. Please enter the in-game room ID.');
+    }
   }
 
   const updatedMatch = await Match.findByIdAndUpdate(matchId, updateData, { new: true });
@@ -324,7 +317,7 @@ const submitResult = async (matchId, userId, resultData) => {
     screenshot_urls: resultData.screenshot_urls,
     submitted_at: Date.now()
   };
-  match.status = 'PENDING_MEDIATOR_REVIEW';
+  match.status = 'REVIEW';
   await match.save();
 
   // Notify
@@ -337,7 +330,7 @@ const approveResult = async (matchId, mediatorId) => {
   const match = await Match.findById(matchId);
   if (!match) throw new Error('Match not found');
 
-  if (match.status !== 'PENDING_MEDIATOR_REVIEW') throw new Error('Match not pending review');
+  if (match.status !== 'REVIEW') throw new Error('Match not pending review');
 
   // Distribute Winnings Logic (Simplified)
   // Credit Creator as placeholder

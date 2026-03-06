@@ -124,6 +124,21 @@ const UserSchema = new mongoose.Schema({
   background_image: {
     type: String,
   },
+  mediator_application_status: {
+    type: String,
+    enum: ['PENDING', 'APPROVED', 'REJECTED'],
+    default: undefined,
+  },
+  mediator_application_note: {
+    type: String,
+  },
+  is_blocked: {
+    type: Boolean,
+    default: false,
+  },
+  block_reason: {
+    type: String,
+  },
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 });

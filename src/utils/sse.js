@@ -18,7 +18,13 @@ const addClient = (req, res) => {
     // Send initial connection message
     res.write(`data: ${JSON.stringify({ type: 'CONNECTED' })}\n\n`);
 
+    // Keep-alive heartbeat to prevent "software caused connection abort" errors
+    const heartbeat = setInterval(() => {
+        res.write(`data: ${JSON.stringify({ type: 'HEARTBEAT' })}\n\n`);
+    }, 30000); // 30 seconds
+
     req.on('close', () => {
+        clearInterval(heartbeat);
         clients = clients.filter(c => c.id !== clientId);
     });
 };

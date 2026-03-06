@@ -82,6 +82,21 @@ const getStats = async (req, res) => {
       return acc + available + locked + withdrawable;
     }, 0);
 
+    // Pending withdrawal requests
+    const pendingWithdrawalAgg = await Transaction.aggregate([
+      { $match: { type: "WITHDRAW", status: "PENDING" } },
+      { $group: { _id: null, count: { $sum: 1 }, total: { $sum: "$amount" } } },
+    ]);
+    const pendingWithdrawals = {
+      count: pendingWithdrawalAgg[0]?.count || 0,
+      total: pendingWithdrawalAgg[0]?.total || 0,
+    };
+
+    // Pending mediator applications
+    const pendingMediatorApprovals = await User.countDocuments({
+      mediator_application_status: "PENDING",
+    });
+
     res.json({
       success: true,
       data: {
@@ -89,6 +104,8 @@ const getStats = async (req, res) => {
         totalMatches,
         activeMatches,
         totalWalletBalance,
+        pendingWithdrawals,
+        pendingMediatorApprovals,
       },
     });
   } catch (error) {
@@ -114,6 +131,51 @@ const getUsers = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+const getMediatorApplications = async (req, res) => {
+  try {
+    const { status = "PENDING" } = req.query;
+    const users = await User.find({ mediator_application_status: status })
+      .select("-password_hash")
+      .sort("-updated_at");
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const approveMediatorApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByIdAndUpdate(
+      id,
+      { mediator_application_status: "APPROVED", role: "MEDIATOR" },
+      { new: true }
+    ).select("-password_hash");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const rejectMediatorApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+    const user = await User.findByIdAndUpdate(
+      id,
+      { mediator_application_status: "REJECTED", mediator_application_note: note || "" },
+      { new: true }
+    ).select("-password_hash");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 const getUserById = async (req, res) => {
   try {
@@ -724,6 +786,9 @@ module.exports = {
   getStats,
   getUsers,
   getUserById,
+  getMediatorApplications,
+  approveMediatorApplication,
+  rejectMediatorApplication,
   getMatches,
   getMatchById,
   createStandardEvent,
@@ -806,12 +871,69 @@ module.exports = {
     try {
       const { id } = req.params;
       const banner = await Banner.findByIdAndDelete(id);
-      if (!banner) {
-        return res.status(404).json({ success: false, message: "Banner not found" });
-      }
-      res.json({ success: true, message: "Banner deleted" });
+      if (!banner) return res.status(404).json({ success: false, message: "Banner not found" });
+      res.json({ success: true, message: "Banner deleted successfully" });
+      broadcast({ type: 'BANNER_UPDATE', action: 'delete', data: { _id: id } });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   },
+  blockUnblockUser: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action, reason } = req.body; // action: 'BLOCK' or 'UNBLOCK'
+      const emailService = require('../services/email.service');
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      if (action === 'BLOCK') {
+        if (user.role === 'ADMIN') {
+          return res.status(403).json({ success: false, message: 'You cannot block an administrator.' });
+        }
+
+        user.is_blocked = true;
+        user.block_reason = reason || 'Violation of terms';
+        await user.save();
+
+        if (user.email) {
+          try {
+            await emailService.sendEmail({
+              to: user.email,
+              subject: 'Account Blocked Notice',
+              text: `Your account has been blocked by the administrator. Reason: ${user.block_reason}`,
+              html: `<p>Your account has been blocked by the administrator.</p><p><b>Reason:</b> ${user.block_reason}</p>`
+            });
+          } catch (emailErr) {
+            console.error("Failed to send block email:", emailErr);
+          }
+        }
+        res.json({ success: true, message: 'User blocked successfully', data: user });
+      } else if (action === 'UNBLOCK') {
+        user.is_blocked = false;
+        user.block_reason = undefined; // clear reason
+        await user.save();
+
+        if (user.email) {
+          try {
+            await emailService.sendEmail({
+              to: user.email,
+              subject: 'Account Unblocked Notice',
+              text: 'Your account has been successfully unblocked. You can now log in.',
+              html: '<p>Your account has been successfully unblocked. You can now log in.</p>'
+            });
+          } catch (emailErr) {
+            console.error("Failed to send unblock email:", emailErr);
+          }
+        }
+        res.json({ success: true, message: 'User unblocked successfully', data: user });
+      } else {
+        return res.status(400).json({ success: false, message: 'Invalid action. Must be BLOCK or UNBLOCK' });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message || 'Unable to block/unblock user' });
+    }
+  }
 };

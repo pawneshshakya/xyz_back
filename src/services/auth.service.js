@@ -27,6 +27,10 @@ const loginUser = async (email, password) => {
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
+    if (user.is_blocked) {
+      throw new Error(`Your account has been blocked. Reason: ${user.block_reason || 'Violation of terms'}`);
+    }
+
     if (!user.is_verified) {
       throw new Error('Please verify your email first');
     }
@@ -37,7 +41,9 @@ const loginUser = async (email, password) => {
       email: user.email,
       token: generateToken(user._id),
       role: user.role,
-      is_wallet_initialized: user.is_wallet_initialized
+      is_wallet_initialized: user.is_wallet_initialized,
+      avatar: user.avatar,
+      background_image: user.background_image
     };
   } else {
     throw new Error('Invalid email or password');
@@ -107,6 +113,10 @@ const loginWithGoogle = async (token) => {
   let user = await User.findOne({ email });
 
   if (user) {
+    if (user.is_blocked) {
+      throw new Error(`Your account has been blocked. Reason: ${user.block_reason || 'Violation of terms'}`);
+    }
+
     if (!user.google_id) {
       user.google_id = googleId;
       await user.save();
@@ -132,7 +142,8 @@ const loginWithGoogle = async (token) => {
     email: user.email,
     token: generateToken(user._id),
     role: user.role,
-    avatar: user.avatar
+    avatar: user.avatar,
+    background_image: user.background_image
   };
 };
 
@@ -153,6 +164,10 @@ const loginWithFacebook = async (token) => {
   let user = await User.findOne({ email });
 
   if (user) {
+    if (user.is_blocked) {
+      throw new Error(`Your account has been blocked. Reason: ${user.block_reason || 'Violation of terms'}`);
+    }
+
     if (!user.facebook_id) {
       user.facebook_id = facebookId;
       await user.save();
@@ -175,7 +190,8 @@ const loginWithFacebook = async (token) => {
     email: user.email,
     token: generateToken(user._id),
     role: user.role,
-    avatar: user.avatar
+    avatar: user.avatar,
+    background_image: user.background_image
   };
 };
 
@@ -208,7 +224,11 @@ const loginWithApple = async (idToken, userObj) => {
     }
   }
 
-  if (!user) {
+  if (user) {
+    if (user.is_blocked) {
+      throw new Error(`Your account has been blocked. Reason: ${user.block_reason || 'Violation of terms'}`);
+    }
+  } else {
     if (!userEmail) throw new Error('Email required for new Apple Sign-In users');
 
     // Name from userObj if available
@@ -230,7 +250,8 @@ const loginWithApple = async (idToken, userObj) => {
     email: user.email,
     token: generateToken(user._id),
     role: user.role,
-    avatar: user.avatar
+    avatar: user.avatar,
+    background_image: user.background_image
   };
 };
 

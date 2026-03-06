@@ -65,6 +65,10 @@ router.post('/app/version', appVersionController.upsertVersionConfig);
 router.get('/app/version', appVersionController.getVersionConfig);
 router.put("/matches/:id", adminController.updateMatch);
 router.delete("/matches/:id", adminController.deleteMatch);
+router.post("/users/:id/block", adminController.blockUnblockUser);
+router.get("/mediator-applications", adminController.getMediatorApplications);
+router.post("/mediator-applications/:id/approve", adminController.approveMediatorApplication);
+router.post("/mediator-applications/:id/reject", adminController.rejectMediatorApplication);
 router.put("/users/:id", adminController.updateUser);
 router.delete("/users/:id", adminController.deleteUser);
 
