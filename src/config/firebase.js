@@ -14,6 +14,8 @@ const serviceAccount = {
     client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
 };
 
+let db = null;
+
 // Check if service account exists/is valid before initializing to prevent crash
 if (serviceAccount.project_id && serviceAccount.client_email && serviceAccount.private_key) {
     // Sanitize private key to handle cases where it might be loaded with escaped newlines
@@ -26,13 +28,12 @@ if (serviceAccount.project_id && serviceAccount.client_email && serviceAccount.p
             // databaseURL: "https://your-project.firebaseio.com" // Optional for Firestore
         });
         console.log("Firebase Admin initialized successfully");
+        db = admin.firestore();
     } catch (error) {
         console.error("Firebase Admin initialization error:", error);
     }
 } else {
     console.warn("Firebase Service Account Config not found or invalid in .env. Notifications will not work.");
 }
-
-const db = admin.firestore();
 
 module.exports = { admin, db };
