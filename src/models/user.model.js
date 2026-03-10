@@ -139,6 +139,10 @@ const UserSchema = new mongoose.Schema({
   block_reason: {
     type: String,
   },
+  fcm_tokens: [{
+    type: String,
+    trim: true,
+  }],
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 });

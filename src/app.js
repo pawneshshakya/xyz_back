@@ -25,6 +25,7 @@ app.use(enforceMinAppVersion);
 app.use('/api/wallet', require('./routes/wallet.routes'));
 app.use('/api/matches', require('./routes/match.routes'));
 app.use('/api/users', require('./routes/user.routes'));
+app.use('/api/notifications', require('./routes/notification.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 
 module.exports = app;
